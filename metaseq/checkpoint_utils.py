@@ -335,6 +335,7 @@ def load_checkpoint(cfg: CheckpointConfig, trainer, **passthrough_args):
 
 def _is_checkpoint_sharded(checkpoint_files) -> bool:
     """Infer if state is sharded based on whether largest file is more than 10% larger than smallest."""
+    print(checkpoint_files)
     sizes = [os.path.getsize(p) for p in checkpoint_files]
     size_ratio = max(sizes) / min(sizes)
     if size_ratio >= 1.1:
@@ -437,7 +438,7 @@ def load_checkpoint_to_cpu(path, arg_overrides=None, load_on_all_ranks=False) ->
         if arg_overrides is not None:
             overwrite_args_by_name(state["cfg"], arg_overrides)
 
-    state = _upgrade_state_dict(state)
+    # state = _upgrade_state_dict(state)
     return state
 
 
