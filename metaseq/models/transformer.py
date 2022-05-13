@@ -812,6 +812,9 @@ class TransformerDecoder(IncrementalDecoder):
                 and self._future_mask.size(0)
                 != (batch_size * self.args.decoder_attention_heads)
             )
+            or (
+                self.self_attn_doc_sep != -1
+            )
         )
 
         # self._future_mask.device != tensor.device is not working in TorchScript. This is a workaround.
