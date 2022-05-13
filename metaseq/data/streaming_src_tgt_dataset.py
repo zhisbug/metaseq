@@ -115,6 +115,7 @@ class StreamingSrcTgtDataset(torch.utils.data.IterableDataset):
         while buffer:
             yield get_next_item_and_replace_in_buffer(None)
 
+
 def yield_src_tgt_blocks(iterable, block_size, drop_last, padding_idx):
     """Packs multiple examples together in a block"""
     cur_src_block = []
