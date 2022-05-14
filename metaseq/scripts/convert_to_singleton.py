@@ -82,6 +82,7 @@ def worker_main(cfg: MetaseqConfig):
 
     with model.summon_full_params():
         for name, p in model.named_parameters():
+            print(f"rank:{cfg.distributed_training.distributed_rank}, param name: {name}, param shape: {p.shape}")
             gathered = [torch.zeros_like(p) for _ in range(mp_size)]
             torch.distributed.all_gather(
                 gathered, p, group=dist_utils.get_global_group()
@@ -97,7 +98,7 @@ def worker_main(cfg: MetaseqConfig):
     output_sd = checkpoint_utils.load_checkpoint_to_cpu(
         cfg.common_eval.path.replace("reshard.pt", "reshard-model_part-0.pt")
     )
-    output_sd["model"] = utils.move_to_cpu(glued)
+    output_sd["model"] = utils.move_to_cpu(glued, cast_to_fp32=False)
     output_sd["cfg"]["model"].arch = "transformer_lm"
 
     if dist_utils.get_global_rank() == 0:
@@ -146,6 +147,9 @@ def main():
     args = options.parse_args_and_arch(parser, input_args=ARGS)
     cfg = convert_namespace_to_omegaconf(args)
     cfg.distributed_training.distributed_world_size = MP
+    cfg.task.vocab_filename = cfg.bpe.bpe_vocab
+    cfg.task.merges_filename = cfg.bpe.bpe_merges
+    # cfg.task.bpe_merges = None
     dist_utils.call_main(cfg, worker_main)
 
 
