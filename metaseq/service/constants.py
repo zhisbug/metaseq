@@ -52,8 +52,12 @@ BPE_VOCAB = os.path.join(MODEL_SHARED_FOLDER, "gpt2-vocab.json")
 # where to store them on SSD for faster loading
 # CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, "175B", "reshard_no_os", "reshard.pt")
 
-CHECKPOINT_FOLDER = os.path.join(MODEL_SHARED_FOLDER, "125M")
-CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, "reshard.pt")
+raw_weights_path = "/home/ubuntu/parax-efs/pycharm/opt/raw_weights"
+model = "1.3B"
+CHECKPOINT_FOLDER = os.path.join(raw_weights_path,  model, "reshard.pt")
+# CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, model)
+# CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, "reshard.pt")
+CHECKPOINT_LOCAL = CHECKPOINT_FOLDER
 
 LAUNCH_ARGS = [
     f"--model-parallel-size {MODEL_PARALLEL}",
@@ -66,7 +70,7 @@ LAUNCH_ARGS = [
     f"--vocab-filename {BPE_VOCAB}",  # TODO(susanz): hack for getting interactive_hosted working on public repo
     f"--path {CHECKPOINT_LOCAL}",
     "--beam 1 --nbest 1",
-    "--distributed-port 13000",
+    # "--distributed-port 13000",
     "--checkpoint-shard-count 1",
     "--use-sharded-state",
     f"--batch-size {BATCH_SIZE}",
