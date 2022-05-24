@@ -53,7 +53,7 @@ BPE_VOCAB = os.path.join(MODEL_SHARED_FOLDER, "gpt2-vocab.json")
 # CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, "175B", "reshard_no_os", "reshard.pt")
 
 raw_weights_path = "/home/ubuntu/parax-efs/pycharm/opt/raw_weights"
-model = "2.7B"
+model = "1.3B"
 CHECKPOINT_FOLDER = os.path.join(raw_weights_path,  model, "reshard.pt")
 # CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, model)
 # CHECKPOINT_LOCAL = os.path.join(LOCAL_SSD, "reshard.pt")
