@@ -197,14 +197,20 @@ class PathManager:
         return False
 
 
+# def recursively_cast_dictconfigs(cfg):
+#     if isinstance(cfg, DictConfig):
+#         cfg = dict(str(cfg))
+#     assert not isinstance(cfg, DictConfig)
+#     if isinstance(cfg, dict):
+#         return {k2: recursively_cast_dictconfigs(v2) for k2, v2 in cfg.items()}
+#     else:
+#         # Easy to support List, Tuple if needed
+#         return cfg
+
 def recursively_cast_dictconfigs(cfg):
     if isinstance(cfg, DictConfig):
-        cfg = eval(str(cfg))
-    assert not isinstance(cfg, DictConfig)
-    if isinstance(cfg, dict):
         return {k2: recursively_cast_dictconfigs(v2) for k2, v2 in cfg.items()}
     else:
-        # Easy to support List, Tuple if needed
         return cfg
 
 

@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from metaseq.distributed.stitch_fsdp_ckpt import consolidate_fsdp_shards
+# from metaseq.distributed.stitch_fsdp_ckpt_v2 import consolidate_fsdp_shards
 import fire
 
 

@@ -590,6 +590,10 @@ class GeneratorInterface:
             self.cfg.generation.max_len_b = total_max_tokens
             self.cfg.generation.max_len_a = 0
 
+            # self.cfg.generation.sampling = False
+            # self.cfg.generation.sampling_topp = -1
+            # self.cfg.generation.sampling_topk = -1
+            # self.cfg.generation.max_len_b = src_lengths.max().item() + 1
             logger.info(f"Preparing generator with settings {self.cfg.generation}")
             generator = self.task.build_generator(
                 self.models, self.cfg.generation, extra_gen_cls_kwargs={"stop": stop}

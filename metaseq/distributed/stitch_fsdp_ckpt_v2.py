@@ -61,7 +61,10 @@ def consolidate_fsdp_shards(
     i = 0
     ckpt = None
     for p in tqdm(all_ckpt_files):
-        names.append(Path(p).name)
+        name = Path(p).name
+        names.append(name)
+        assert name.endswith("-shard0.pt")
+        part_id = name[-11]
         if re.search(r"rank-(\d+)", os.path.basename(p)):  # expert checkpoint
             expert_paths.append(p)
             r = re.search(r"rank-(\d+)", os.path.basename(p)).groups()[0]
@@ -72,10 +75,12 @@ def consolidate_fsdp_shards(
             if i == 0:
                 ckpt = load_and_pop_last_optimizer_state(p)
                 weights.append(ckpt["model"])
-                metadata.append(ckpt["shard_metadata"])
+                # metadata.append(ckpt["shard_metadata"])
+                meta = torch_load_cpu(f"/home/ubuntu/dataset/175B-resharded/metadata/metadata_part-{part_id}")
+                metadata.append(meta)
             else:
                 weights.append(ckpt["model"])
-                metadata.append(ckpt["shard_metadata"])
+                metadata.append(meta)
             i = i + 1
     assert weights, f"all files were considered experts: {all_ckpt_files}"
     do_consolidate = True
@@ -91,7 +96,16 @@ def consolidate_fsdp_shards(
         num_parts = find_num_parts(names)
         if num_parts:
             logger.info("consolidate_model_parallel")
-            consolidated_weights = consolidate_model_parallel(
+            #consolidated_weights = consolidate_model_parallel(
+            #    metadata,
+            #    names,
+            #    strict,
+            #    weights,
+            #    parts=num_parts,
+            #    no_stitch_megatron=no_stitch_megatron,
+            #)
+            print("Part 1: --- ")
+            consolidated_weights = consolidate_model_parallel_part1(
                 metadata,
                 names,
                 strict,
@@ -99,15 +113,22 @@ def consolidate_fsdp_shards(
                 parts=num_parts,
                 no_stitch_megatron=no_stitch_megatron,
             )
+            del weights, metadata
+            gc.collect()
+            if not no_stitch_megatron:
+                print("Part 2: --- ")
+                consolidated_weights = consolidate_model_parallel_part2(
+                    consolidated_weights)
         else:
             logger.info("FSDP.consolidate_shard_weights")
             consolidated_weights = FSDP.consolidate_shard_weights(
                 shard_weights=weights, shard_metadata=metadata, strict=strict
             )
-        del weights, metadata
-        gc.collect()
+        #del weights, metadata
+        #gc.collect()
         done_consolidate = time.time()
         logger.info(f"Done consolidating after {done_consolidate-t0//60} minutes")
+        exit(0)
     else:
         consolidated_weights = weights[0]
     if new_arch_name is not None:
@@ -186,17 +207,40 @@ def consolidate_model_parallel(
                 metadata_parts[p].append(metadata[i])
     all_parts_consolidated = defaultdict(list)
     for k, v in tqdm(model_parts.items()):
-        print(f"Processing part: {k}...")
+        print(f"Processing part: {k}, with {len(v)} shards...")
         part_weights = FSDP.consolidate_shard_weights(
             shard_weights=v, shard_metadata=metadata_parts[k], strict=strict
         )
         all_parts_consolidated[k] = part_weights
     if no_stitch_megatron:
         return all_parts_consolidated
-    print("start glueing megatron parts...")
     model = glue_megatron_parts(all_parts_consolidated)
     return model
 
+def consolidate_model_parallel_part1(
+    metadata, names, strict, weights, parts=2, no_stitch_megatron=False
+):
+    model_parts = defaultdict(list)
+    metadata_parts = defaultdict(list)
+    print(names)
+    print(parts)
+    for i, n in enumerate(names):
+        for p in range(parts):
+            if f"part-{p}" in n:
+                model_parts[p].append(weights[i])
+                metadata_parts[p].append(metadata[i])
+    all_parts_consolidated = defaultdict(list)
+    for k, v in tqdm(model_parts.items()):
+        print(f"Processing part: {k}, with {len(v)} shards...")
+        part_weights = FSDP.consolidate_shard_weights(
+            shard_weights=v, shard_metadata=metadata_parts[k], strict=strict
+        )
+        all_parts_consolidated[k] = part_weights
+    return all_parts_consolidated
+
+def consolidate_model_parallel_part2(all_parts_consolidated):
+    model = glue_megatron_parts(all_parts_consolidated)
+    return model
 
 def handle_qkv_proj(model_parts, key):
     parts = [model_parts[part_id][key] for part_id in range(len(model_parts))]
@@ -348,6 +392,8 @@ def glue_megatron_parts(model_parts):
     # Consolidate ffn_layernorm.lns.weight.{part_id} -> ffn_layernorm.weight
     handle_legacy_ln_(glued_model, len(model_parts))
     assert "decoder.layers.0.ffn_layernorm.lns.0.weight" not in glued_model
+    for key in glued_model:
+        print("key: {key}, shape: {glued_model[key].shape}")
     return glued_model
 
 

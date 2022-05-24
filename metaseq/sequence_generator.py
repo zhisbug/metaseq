@@ -221,6 +221,7 @@ class SequenceGenerator(nn.Module):
             tokens[:, :start_step],
             incremental_state=incremental_states,
         )
+        print(model_out[0])
         # normalize
         model_out[0].div_(self.temperature, rounding_mode="trunc")
         # lprobs is the log probability of each possible token in every position

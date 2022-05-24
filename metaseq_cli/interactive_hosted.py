@@ -186,7 +186,6 @@ def completions(engine=None):
     # - list of list of ints. Pretokenized multiple generations.
 
     # our approach is to turn everything into the last case
-
     prompts = request.json["prompt"]
     del request.json["prompt"]
     generation_args = request.json
