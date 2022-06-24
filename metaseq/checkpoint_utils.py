@@ -499,13 +499,15 @@ def load_model_ensemble_and_task(
 
             if "task_state" in state:
                 task.load_state_dict(state["task_state"])
-
+            setattr(cfg.model, 'tensor_parallel_init_model_on_gpu', False)
+            setattr(cfg.model, 'decoder_layers', 1)
             if build_model_hook is not None:
                 model = build_model_hook(cfg, task)
             else:
                 # build model for ensemble
                 model = task.build_model(cfg.model)
 
+            strict = False
             model.load_state_dict(state["model"], strict=strict, model_cfg=cfg.model)
             logger.info("Done loading state dict")
             # reset state so it gets loaded for the next model in ensemble
